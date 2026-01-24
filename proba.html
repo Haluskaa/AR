@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Kamera teszt</title>
+    <style>
+      html, body { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; }
+      #cam {
+        position: fixed;
+        inset: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        background: #000;
+      }
+      #hint {
+        position: fixed;
+        left: 50%;
+        bottom: 16px;
+        transform: translateX(-50%);
+        color: #fff;
+        font: 14px system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+        opacity: 0.85;
+        text-shadow: 0 0 6px rgba(0,0,0,0.8);
+        z-index: 10;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <video id="cam" autoplay playsinline webkit-playsinline muted></video>
+    <div id="hint">Ha rákérdez, engedélyezd a kamerát.</div>
+
+    <script>
+      (async () => {
+        const video = document.getElementById("cam");
+
+        // mobilon a hátlapi kamera a kényelmesebb
+        const constraints = {
+          audio: false,
+          video: {
+            facingMode: { ideal: "environment" }
+          }
+        };
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia(constraints);
+          video.srcObject = stream;
+
+          // iOS/Safari néha szereti, ha expliciten indítjuk
+          await video.play();
+        } catch (err) {
+          console.error(err);
+          document.getElementById("hint").textContent =
+            "Nem sikerült kamerát indítani. Ellenőrizd: HTTPS, engedély, és hogy nem tiltja-e a böngésző.";
+        }
+      })();
+    </script>
+  </body>
+</html>
