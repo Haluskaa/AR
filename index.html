@@ -1,174 +1,153 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="hu">
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover"
-    />
-    <title>MindAR – Képindított videó</title>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Kamera + MindAR</title>
 
-    <!-- A-Frame + MindAR -->
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+  <!-- A-Frame + MindAR -->
+  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden;
-        background: #000;
-        font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      }
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
 
-      /* START OVERLAY */
-      #overlay {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: rgba(0, 0, 0, 0.75);
-        color: #fff;
-        z-index: 9000;
-        text-align: center;
-        padding: 24px;
-      }
+    /* NATÍV KAMERA – EZ A BIZTOS ALAP */
+    #camera {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 0;
+      background: #000;
+    }
 
-      #overlay button {
-        margin-top: 16px;
-        border: 0;
-        border-radius: 12px;
-        padding: 12px 18px;
-        font-size: 16px;
-        font-weight: 600;
-        cursor: pointer;
-      }
+    /* MINDAR CANVAS – CSAK RÁRAJZOL */
+    a-scene {
+      position: fixed !important;
+      inset: 0;
+      z-index: 1;
+      background: transparent !important;
+    }
 
-      
+    #hint {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 14px;
+      opacity: 0.85;
+      z-index: 2;
+      text-shadow: 0 0 6px rgba(0,0,0,0.8);
+      pointer-events: none;
+    }
+  </style>
+</head>
 
-      @keyframes scanMove {
-        0% {
-          top: 0%;
-        }
-        100% {
-          top: 100%;
-        }
-      }
+<body>
 
-      #scanText {
-        margin-top: 14px;
-        font-size: 14px;
-        opacity: 0.85;
-      }
-    </style>
-  </head>
+  <!-- 1️⃣ BIZTOS KAMERA FEED -->
+  <video
+    id="camera"
+    autoplay
+    muted
+    playsinline
+    webkit-playsinline>
+  </video>
 
-  <body>
-    <!-- START -->
-    <div id="overlay">
-      <div>
-        <h2>AR indítás</h2>
-        <p>
-          Engedélyezd a kamerát, majd irányítsd a telefont a célképre.
-        </p>
-        <button id="startBtn">Start</button>
-      </div>
-    </div>
+  <div id="hint">Irányítsd a kamerát a célképre…</div>
 
+  <!-- 2️⃣ MINDAR CSAK RÁRAJZOL -->
+  <a-scene
+    embedded
+    mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false"
+  >
+    <a-assets>
+      <video
+        id="arVideo"
+        src="video.mp4"
+        loop
+        muted
+        playsinline
+        webkit-playsinline
+        crossorigin="anonymous">
+      </video>
+    </a-assets>
 
-    <a-scene
-      embedded
-      mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
-      color-space="sRGB"
-      renderer="colorManagement: true"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-    >
-      <a-assets>
-        <!-- ÁLLÓ (portrait) videó -->
-        <video
-          id="arVideo"
-          src="video.mp4"
-          preload="auto"
-          loop
-          muted
-          playsinline
-          webkit-playsinline
-          crossorigin="anonymous"
-        ></video>
-      </a-assets>
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    <a-entity mindar-image-target="targetIndex: 0">
+      <!-- álló videó -->
+      <a-video
+        src="#arVideo"
+        width="0.6"
+        height="1.0"
+        position="0 0 0">
+      </a-video>
+    </a-entity>
+  </a-scene>
 
-      <!-- TARGET -->
-      <a-entity mindar-image-target="targetIndex: 0">
-        <!--
-          Portrait arány:
-          width: 0.6
-          height: 1.0  (kb 9:16 hatás)
-        -->
-        <a-video
-          src="#arVideo"
-          width="0.6"
-          height="1.0"
-          position="0 0 0"
-        ></a-video>
-      </a-entity>
-    </a-scene>
+  <script>
+    const camVideo = document.getElementById("camera");
+    const arVideo  = document.getElementById("arVideo");
+    const hint     = document.getElementById("hint");
+    const sceneEl  = document.querySelector("a-scene");
+    const targetEl = document.querySelector("[mindar-image-target]");
 
-    <script>
-      const startBtn = document.getElementById("startBtn");
-      const overlay = document.getElementById("overlay");
-      const scanOverlay = document.getElementById("scanOverlay");
-
-      const sceneEl = document.querySelector("a-scene");
-      const videoEl = document.getElementById("arVideo");
-      const targetEl = document.querySelector("[mindar-image-target]");
-
-      function getMindarSystem() {
-        return sceneEl.systems["mindar-image-system"];
-      }
-
-      async function primeVideo() {
-        try {
-          await videoEl.play();
-          videoEl.pause();
-          videoEl.currentTime = 0;
-        } catch (e) {}
-      }
-
-      startBtn.addEventListener("click", async () => {
-        await primeVideo();
-        const mindar = getMindarSystem();
-        await mindar.start();
-        overlay.style.display = "none";
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false
       });
+      camVideo.srcObject = stream;
+      await camVideo.play();
+    }
 
-      targetEl.addEventListener("targetFound", async () => {
-        scanOverlay.style.display = "none";
-        try {
-          await videoEl.play();
-        } catch (e) {}
-      });
+    async function startMindAR() {
+      const mindarSystem = sceneEl.systems["mindar-image-system"];
 
-      targetEl.addEventListener("targetLost", () => {
-        scanOverlay.style.display = "flex";
-        try {
-          videoEl.pause();
-        } catch (e) {}
-      });
+      // iOS autoplay workaround
+      try {
+        await arVideo.play();
+        arVideo.pause();
+        arVideo.currentTime = 0;
+      } catch (e) {}
 
-      document.addEventListener("visibilitychange", () => {
-        if (document.hidden) {
-          try {
-            videoEl.pause();
-          } catch (e) {}
-        }
-      });
-    </script>
-  </body>
+      await mindarSystem.start();
+    }
+
+    targetEl.addEventListener("targetFound", async () => {
+      hint.style.display = "none";
+      try { await arVideo.play(); } catch (e) {}
+    });
+
+    targetEl.addEventListener("targetLost", () => {
+      hint.style.display = "block";
+      arVideo.pause();
+    });
+
+    // indulás automatikusan
+    (async () => {
+      try {
+        await startCamera();
+        await startMindAR();
+      } catch (e) {
+        hint.textContent = "Kamera indítás sikertelen (engedély / HTTPS?)";
+        console.error(e);
+      }
+    })();
+  </script>
+
+</body>
 </html>
