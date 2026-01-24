@@ -48,43 +48,7 @@
         cursor: pointer;
       }
 
-      /* SCAN OVERLAY */
-      #scanOverlay {
-        position: fixed;
-        inset: 0;
-        pointer-events: none;
-        z-index: 8000;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        color: #fff;
-      }
-
-      #scanFrame {
-        width: 70vw;
-        max-width: 320px;
-        aspect-ratio: 1 / 1;
-        border: 2px solid rgba(0, 255, 255, 0.9);
-        border-radius: 14px;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
-      }
-
-      #scanLine {
-        position: absolute;
-        left: 0;
-        right: 0;
-        height: 3px;
-        background: linear-gradient(
-          90deg,
-          transparent,
-          #00ffff,
-          transparent
-        );
-        animation: scanMove 2s linear infinite;
-      }
+      
 
       @keyframes scanMove {
         0% {
@@ -115,13 +79,6 @@
       </div>
     </div>
 
-    <!-- SCAN UI -->
-    <div id="scanOverlay">
-      <div id="scanFrame">
-        <div id="scanLine"></div>
-      </div>
-      <div id="scanText">Kép felismerése…</div>
-    </div>
 
     <a-scene
       embedded
