@@ -8,7 +8,7 @@
     />
     <title>MindAR – Képindított videó</title>
 
-    <!-- A-Frame + MindAR (A-Frame build) -->
+    <!-- A-Frame + MindAR -->
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
@@ -24,83 +24,115 @@
         font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
       }
 
-      /* egyszerű overlay instrukció + start gomb (mobil autoplay szabályok miatt hasznos) */
+      /* START OVERLAY */
       #overlay {
         position: fixed;
         inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 24px;
-        background: rgba(0, 0, 0, 0.72);
+        background: rgba(0, 0, 0, 0.75);
         color: #fff;
-        z-index: 9999;
+        z-index: 9000;
         text-align: center;
+        padding: 24px;
       }
 
-      #panel {
-        max-width: 520px;
-      }
-
-      #panel h1 {
-        margin: 0 0 12px;
-        font-size: 20px;
-        font-weight: 700;
-      }
-
-      #panel p {
-        margin: 0 0 16px;
-        line-height: 1.35;
-        opacity: 0.95;
-      }
-
-      #startBtn {
+      #overlay button {
+        margin-top: 16px;
         border: 0;
         border-radius: 12px;
-        padding: 12px 16px;
+        padding: 12px 18px;
         font-size: 16px;
-        font-weight: 650;
+        font-weight: 600;
         cursor: pointer;
       }
 
-      #hint {
-        margin-top: 10px;
-        font-size: 13px;
+      /* SCAN OVERLAY */
+      #scanOverlay {
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        z-index: 8000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+      }
+
+      #scanFrame {
+        width: 70vw;
+        max-width: 320px;
+        aspect-ratio: 1 / 1;
+        border: 2px solid rgba(0, 255, 255, 0.9);
+        border-radius: 14px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 25px rgba(0, 255, 255, 0.4);
+      }
+
+      #scanLine {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(
+          90deg,
+          transparent,
+          #00ffff,
+          transparent
+        );
+        animation: scanMove 2s linear infinite;
+      }
+
+      @keyframes scanMove {
+        0% {
+          top: 0%;
+        }
+        100% {
+          top: 100%;
+        }
+      }
+
+      #scanText {
+        margin-top: 14px;
+        font-size: 14px;
         opacity: 0.85;
       }
     </style>
   </head>
 
   <body>
-    <!-- Mobilon sokszor kell egy user interaction (gomb) a biztos videó play-hez -->
+    <!-- START -->
     <div id="overlay">
-      <div id="panel">
-        <h1>AR indítás</h1>
+      <div>
+        <h2>AR indítás</h2>
         <p>
-          Nyomd meg a <b>Start</b> gombot, engedélyezd a kamerát, majd irányítsd
-          a telefont a célképre.
+          Engedélyezd a kamerát, majd irányítsd a telefont a célképre.
         </p>
         <button id="startBtn">Start</button>
-        <div id="hint">
-          Tipp: ha iPhone-on vagy, a videó hangja csak külön interakció után
-          engedélyezhető – alapból némítva indul.
-        </div>
       </div>
     </div>
 
+    <!-- SCAN UI -->
+    <div id="scanOverlay">
+      <div id="scanFrame">
+        <div id="scanLine"></div>
+      </div>
+      <div id="scanText">Kép felismerése…</div>
+    </div>
+
     <a-scene
+      embedded
       mindar-image="imageTargetSrc: targets.mind; autoStart: false;"
       color-space="sRGB"
-      renderer="colorManagement: true; physicallyCorrectLights: true"
+      renderer="colorManagement: true"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
-      embedded
     >
       <a-assets>
-        <!--
-          video.mp4 legyen a repóban ugyanitt.
-          Kötelező mobilhoz: muted + playsinline + webkit-playsinline
-        -->
+        <!-- ÁLLÓ (portrait) videó -->
         <video
           id="arVideo"
           src="video.mp4"
@@ -115,102 +147,71 @@
 
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-      <!-- targetIndex: 0 = a targets.mind első képe -->
+      <!-- TARGET -->
       <a-entity mindar-image-target="targetIndex: 0">
         <!--
-          A videó sík (plane) mérete:
-          width=1 -> alap; height=0.5625 = 16:9 arány.
-          Ha a videód más arányú, állítsd át.
+          Portrait arány:
+          width: 0.6
+          height: 1.0  (kb 9:16 hatás)
         -->
         <a-video
           src="#arVideo"
-          width="1"
-          height="0.5625"
+          width="0.6"
+          height="1.0"
           position="0 0 0"
         ></a-video>
       </a-entity>
     </a-scene>
 
     <script>
-      (function () {
-        const overlay = document.getElementById("overlay");
-        const startBtn = document.getElementById("startBtn");
+      const startBtn = document.getElementById("startBtn");
+      const overlay = document.getElementById("overlay");
+      const scanOverlay = document.getElementById("scanOverlay");
 
-        const sceneEl = document.querySelector("a-scene");
-        const videoEl = document.getElementById("arVideo");
-        const targetEl = document.querySelector("[mindar-image-target]");
+      const sceneEl = document.querySelector("a-scene");
+      const videoEl = document.getElementById("arVideo");
+      const targetEl = document.querySelector("[mindar-image-target]");
 
-        // MindAR system elérése
-        const getMindarSystem = () =>
-          sceneEl.systems && sceneEl.systems["mindar-image-system"];
+      function getMindarSystem() {
+        return sceneEl.systems["mindar-image-system"];
+      }
 
-        // Biztonsági: próbáljuk "felébreszteni" a videót user action alatt
-        async function primeVideo() {
+      async function primeVideo() {
+        try {
+          await videoEl.play();
+          videoEl.pause();
+          videoEl.currentTime = 0;
+        } catch (e) {}
+      }
+
+      startBtn.addEventListener("click", async () => {
+        await primeVideo();
+        const mindar = getMindarSystem();
+        await mindar.start();
+        overlay.style.display = "none";
+      });
+
+      targetEl.addEventListener("targetFound", async () => {
+        scanOverlay.style.display = "none";
+        try {
+          await videoEl.play();
+        } catch (e) {}
+      });
+
+      targetEl.addEventListener("targetLost", () => {
+        scanOverlay.style.display = "flex";
+        try {
+          videoEl.pause();
+        } catch (e) {}
+      });
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
           try {
-            videoEl.muted = true;
-            videoEl.playsInline = true;
-
-            // iOS/Safari néha szereti, ha play->pause megtörténik user interaction közben
-            await videoEl.play();
             videoEl.pause();
-            videoEl.currentTime = 0;
-          } catch (e) {
-            // Ha itt elhasal, még mindig elindulhat targetFound-ra (muted mellett)
-            console.warn("primeVideo failed:", e);
-          }
+          } catch (e) {}
         }
-
-        // Target események: megtalálta / elvesztette
-        function bindTargetEvents() {
-          if (!targetEl) return;
-
-          targetEl.addEventListener("targetFound", async () => {
-            try {
-              await videoEl.play();
-            } catch (e) {
-              console.warn("video play failed:", e);
-            }
-          });
-
-          targetEl.addEventListener("targetLost", () => {
-            try {
-              videoEl.pause();
-            } catch (e) {}
-          });
-        }
-
-        // Start gomb: kamera engedély + MindAR indul
-        startBtn.addEventListener("click", async () => {
-          try {
-            await primeVideo();
-
-            const mindarSystem = getMindarSystem();
-            if (!mindarSystem) {
-              alert("MindAR rendszer nem töltődött be. Nézd meg a konzolt.");
-              return;
-            }
-
-            await mindarSystem.start(); // kamera indul
-            overlay.style.display = "none";
-
-            bindTargetEvents();
-          } catch (e) {
-            console.error(e);
-            alert(
-              "Nem sikerült elindítani a kamerát. Ellenőrizd a kameraengedélyt és hogy HTTPS-en fut-e (pl. GitHub Pages)."
-            );
-          }
-        });
-
-        // Ha visszamész a tabra / háttérbe: állítsuk meg a videót
-        document.addEventListener("visibilitychange", () => {
-          if (document.hidden) {
-            try {
-              videoEl.pause();
-            } catch (e) {}
-          }
-        });
-      })();
+      });
     </script>
   </body>
 </html>
